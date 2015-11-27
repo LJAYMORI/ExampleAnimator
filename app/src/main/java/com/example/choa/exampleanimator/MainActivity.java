@@ -1,7 +1,9 @@
 package com.example.choa.exampleanimator;
 
 import android.animation.ObjectAnimator;
+import android.annotation.TargetApi;
 import android.graphics.Path;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -29,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
                 imageView.setTranslationY(dy);
             }
 
+            @TargetApi(Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void onFling(float curX, float curY, float velocityX, float velocityY) {
                 Log.d("moving", "curX :" + curX + ", curY : " + curY + ", velocityX : " + velocityX + ", velocityY : " + velocityY);
