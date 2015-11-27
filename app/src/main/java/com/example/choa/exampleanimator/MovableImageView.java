@@ -19,6 +19,9 @@ public class MovableImageView extends ImageView {
 
     private float mFirstTouchX;
     private float mFirstTouchY;
+    private float mLastTouchX;
+    private float mLastTouchY;
+
     private float mMinFlingVelocity;
     private float mMaxFlingVelocity;
     private float mTouchSlop;
@@ -50,6 +53,8 @@ public class MovableImageView extends ImageView {
         switch (action) {
             case MotionEvent.ACTION_DOWN: {
                 Log.d("onTouchEvent", "down");
+                mActivePointerId = event.getPointerId(0);
+
                 mVelocityTracker.clear();
 
                 mFirstTouchX = event.getRawX();
@@ -57,13 +62,23 @@ public class MovableImageView extends ImageView {
                 break;
             }
             case MotionEvent.ACTION_MOVE: {
-                final float x = event.getRawX();
-                final float y = event.getRawY();
+                int index = event.findPointerIndex(mActivePointerId);
+                if (index < 0) {
+                    index = 0;
+                    mActivePointerId = event.getPointerId(0);
+                    mFirstTouchX = mLastTouchX = event.getX();
+                    mFirstTouchY = mLastTouchY = event.getY();
+                }
+                final float x = event.getX(index);
+                final float y = event.getY(index);
                 Log.d("onTouchEvent", "move x : " + x + ", y : " + y);
 
                 if (mTouchEvent != null) {
                     mTouchEvent.onMoving(mFirstTouchX, mFirstTouchY, x, y);
                 }
+
+                mLastTouchX = x;
+                mLastTouchY = y;
                 break;
             }
             case MotionEvent.ACTION_UP: {
@@ -80,7 +95,7 @@ public class MovableImageView extends ImageView {
                 if (mTouchEvent != null) {
                     mTouchEvent.onFling(x, y ,velocityX, velocityY);
                 }
-
+                resetTouch();
                 break;
             }
             default: {
@@ -92,6 +107,7 @@ public class MovableImageView extends ImageView {
 
     private void resetTouch() {
         mActivePointerId = MotionEvent.INVALID_POINTER_ID;
+        mFirstTouchX = mFirstTouchY = mLastTouchX = mLastTouchY = 0;
         mVelocityTracker.clear();
 
     }
