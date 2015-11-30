@@ -8,12 +8,18 @@
 
     <com.example.choa.exampleanimator.MovableImageView
         android:id="@+id/object"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:background="#fefe22"
         android:layout_gravity="center"
         android:padding="12dp"
         android:src="@mipmap/ic_launcher"/>
+
+    <Button
+        android:id="@+id/btn_reset"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="reset"/>
 
 
 </FrameLayout>
