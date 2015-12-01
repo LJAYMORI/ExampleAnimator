@@ -19,20 +19,16 @@ import android.widget.ImageView;
  */
 public class MovableImageView extends ImageView {
 
-    public static final int MAX_MOVE_LENGTH = 500;
+    public static final int MAX_MOVE_PIXEL = 1000;
     private VelocityTracker mVelocityTracker;
 
-    private float mMaxFlingVelocity;
-    private float mMinFlingVelocity;
+    private int mMaxFlingVelocity;
+    private int mMinFlingVelocity;
 
     private float mFirstEventX;
     private float mFirstEventY;
 
-    private float mViewOriginX;
-    private float mViewOriginY;
-
-    private float mMovedX;
-    private float mMovedY;
+    private Interpolator mInterpolator;
 
     public MovableImageView(Context context) {
         this(context, null);
@@ -47,9 +43,12 @@ public class MovableImageView extends ImageView {
 
         mVelocityTracker = VelocityTracker.obtain();
 
+        mInterpolator = AnimationUtils
+                .loadInterpolator(getContext(), android.R.anim.decelerate_interpolator);
+
         final ViewConfiguration vc = ViewConfiguration.get(context);
         mMinFlingVelocity = vc.getScaledMinimumFlingVelocity();
-        mMaxFlingVelocity = (int) mMinFlingVelocity * 10;
+        mMaxFlingVelocity = mMinFlingVelocity * 20;
 
         Log.d("velocity", "maxFling:" + mMaxFlingVelocity + ", minFling:" + mMinFlingVelocity);
     }
@@ -59,77 +58,81 @@ public class MovableImageView extends ImageView {
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getActionMasked();
 
+        if (action == MotionEvent.ACTION_DOWN) {
+            mVelocityTracker.clear();
+        }
+
+        mVelocityTracker.addMovement(event);
+
         switch (action) {
             case MotionEvent.ACTION_DOWN: {
-                mVelocityTracker.clear();
-
                 mFirstEventX = event.getRawX();
                 mFirstEventY = event.getRawY();
-
-                mViewOriginX = getX();
-                mViewOriginY = getY();
-
-                Log.d("down", "originX:" + mViewOriginX + ", originY:" + mViewOriginY);
 
                 break;
             }
             case MotionEvent.ACTION_MOVE: {
-                mVelocityTracker.addMovement(event);
                 final float dx = event.getRawX() - mFirstEventX;
                 final float dy = event.getRawY() - mFirstEventY;
 
                 setTranslationX(dx);
                 setTranslationY(dy);
 
-                mMovedX = dx;
-                mMovedY = dy;
-
                 break;
             }
             case MotionEvent.ACTION_UP: {
-                layout((int) getX(), (int) getY(), (int) (getX() + getWidth()), (int) (getY() + getHeight()));
+                float x = getX();
+                float y = getY();
+                layout((int) x, (int) y, (int) (x + getWidth()), (int) (y + getHeight()));
 
-                mVelocityTracker.computeCurrentVelocity(500);
+                mVelocityTracker.computeCurrentVelocity(500, mMaxFlingVelocity);
 
                 float velX = mVelocityTracker.getXVelocity();
                 float velY = mVelocityTracker.getYVelocity();
 
-                if (Math.abs(velX) > mMaxFlingVelocity) {
+                float absVelX = Math.abs(velX);
+                if (absVelX > mMaxFlingVelocity) {
                     velX = velX < 0 ? -mMaxFlingVelocity : mMaxFlingVelocity;
-                } else if (Math.abs(velX) < mMinFlingVelocity) {
+                } else if (absVelX < mMinFlingVelocity) {
                     velX = 0;
                 }
 
-                if (Math.abs(velY) > mMinFlingVelocity) {
+                float absVelY = Math.abs(velY);
+                if (absVelY > mMaxFlingVelocity) {
                     velY = velY < 0 ? -mMaxFlingVelocity : mMaxFlingVelocity;
-                } else if (Math.abs(velY) < mMinFlingVelocity) {
+                } else if (absVelY < mMinFlingVelocity) {
                     velY = 0;
                 }
 
-                float dx = velX / mMaxFlingVelocity * MAX_MOVE_LENGTH;
-                float dy = velY / mMaxFlingVelocity * MAX_MOVE_LENGTH;
-
-                Interpolator interpolator = AnimationUtils
-                        .loadInterpolator(getContext(), android.R.anim.decelerate_interpolator);
+                float dx = velX / mMaxFlingVelocity * MAX_MOVE_PIXEL;
+                float dy = velY / mMaxFlingVelocity * MAX_MOVE_PIXEL;
 
                 Path path = new Path();
                 path.lineTo(dx, dy);
+                Log.d("path", "dx:" + dx + ", dy:" + dy);
 
                 ObjectAnimator anim = ObjectAnimator.ofFloat(this, "translationX", "translationY", path);
                 anim.addListener(new AnimatorListenerAdapter() {
                     @Override
+                    public void onAnimationStart(Animator animation) {
+                        setClickable(false);
+                    }
+
+                    @Override
                     public void onAnimationEnd(Animator animation) {
-                        float x = getX();
-                        float y = getY();
-                        layout((int) x, (int) y, (int) (x + getWidth()), (int) (y + getHeight()));
+                        float lastX = getX();
+                        float lastY = getY();
+                        layout((int) lastX, (int) lastY, (int) (lastX + getWidth()), (int) (lastY + getHeight()));
                         setTranslationX(0);
                         setTranslationY(0);
+                        setClickable(true);
                     }
                 });
 
-                anim.setDuration(1000);
-                anim.setInterpolator(interpolator);
+                anim.setDuration(dx == 0 && dy == 0 ? 0 : 500);
+                anim.setInterpolator(mInterpolator);
                 anim.start();
+
                 break;
             }
         }

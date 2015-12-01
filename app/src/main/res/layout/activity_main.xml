@@ -21,5 +21,12 @@
         android:layout_height="wrap_content"
         android:text="reset"/>
 
+    <Button
+        android:id="@+id/btn_get_x_y"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="get x, y"
+        android:layout_gravity="bottom"/>
+
 
 </FrameLayout>
